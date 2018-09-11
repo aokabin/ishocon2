@@ -81,7 +81,7 @@ func getCandidatesByPoliticalParty(party string) (candidates []Candidate) {
 
 	for rows.Next() {
 		c := Candidate{}
-		err = rows.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex)
+		err = rows.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex, &c.Votes)
 		if err != nil {
 			panic(err.Error())
 		}
