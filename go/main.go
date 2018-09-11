@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"database/sql"
 	"html/template"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gin-contrib/pprof"
 )
 
 var db *sql.DB
@@ -25,9 +25,6 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 	// database setting
 	user := getEnv("ISHOCON2_DB_USER", "ishocon")
 	pass := getEnv("ISHOCON2_DB_PASSWORD", "ishocon")
@@ -37,6 +34,7 @@ func main() {
 
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
+	pprof.Register(r) // ginのpprof?
 	r.Use(static.Serve("/css", static.LocalFile("public/css", true)))
 	layout := "templates/layout.tmpl"
 

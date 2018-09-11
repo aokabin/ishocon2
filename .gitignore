@@ -7,3 +7,5 @@ ruby/
 webapp
 
 vendor/
+
+.env
