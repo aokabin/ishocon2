@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gin-contrib/pprof"
-	"io/ioutil"
 )
 
 var (
@@ -21,6 +20,8 @@ var (
 	//votes map[int][]Vote // Key: CandidateID
 	layout string
 	r *gin.Engine
+	candidateList []Candidate
+	candidateByName map[string]Candidate
 )
 
 func getEnv(key, fallback string) string {
@@ -38,7 +39,7 @@ func main() {
 	db, _ = sql.Open("mysql", user+":"+pass+"@/"+dbname)
 	db.SetMaxIdleConns(5)
 
-	gin.DefaultWriter = ioutil.Discard
+	//gin.DefaultWriter = ioutil.Discard
 	r = gin.Default()
 	pprof.Register(r) // ginのpprof?
 	r.Use(static.Serve("/css", static.LocalFile("public/css", true)))
@@ -106,11 +107,9 @@ func main() {
 
 	// GET /vote
 	r.GET("/vote", func(c *gin.Context) {
-		candidates := getAllCandidate()
-
 		r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/vote.tmpl")))
 		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
+			"candidates": candidateList,
 			"message":    "",
 		})
 	})
@@ -128,8 +127,19 @@ func Initialize(c *gin.Context) {
 	db.Exec("UPDATE candidates SET votes = 0")
 
 	//votes = []Vote{}
+	candidateList = getAllCandidate()
+	candidateByName = candidateWithName()
 
 	c.String(http.StatusOK, "Finish")
+}
+
+func candidateWithName() map[string]Candidate {
+	candidates := map[string]Candidate{}
+	for _, c := range candidateList {
+		candidates[c.Name] = c
+	}
+
+	return candidates
 }
 
 func ShowPoliticalParty(c *gin.Context) {
@@ -173,7 +183,6 @@ func ShowCandidate(c *gin.Context) {
 }
 
 func CreateVotes(c *gin.Context) {
-	candidates := getAllCandidate()
 	r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/vote.tmpl")))
 
 	var message string
@@ -182,7 +191,7 @@ func CreateVotes(c *gin.Context) {
 	if userErr != nil {
 		message = "個人情報に誤りがあります"
 		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
+			"candidates": candidateList,
 			"message":    message,
 		})
 		return
@@ -194,7 +203,7 @@ func CreateVotes(c *gin.Context) {
 	if user.Votes < voteCount+votedCount {
 		message = "投票数が上限を超えています"
 		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
+			"candidates": candidateList,
 			"message":    message,
 		})
 		return
@@ -202,7 +211,7 @@ func CreateVotes(c *gin.Context) {
 	if c.PostForm("candidate") == "" {
 		message = "候補者を記入してください"
 		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
+			"candidates": candidateList,
 			"message":    message,
 		})
 		return
@@ -212,7 +221,7 @@ func CreateVotes(c *gin.Context) {
 	if cndErr != nil {
 		message = "候補者を正しく記入してください"
 		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
+			"candidates": candidateList,
 			"message":    message,
 		})
 		return
@@ -221,7 +230,7 @@ func CreateVotes(c *gin.Context) {
 	if c.PostForm("keyword") == "" {
 		message = "投票理由を記入してください"
 		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
+			"candidates": candidateList,
 			"message":    message,
 		})
 		return
@@ -231,7 +240,7 @@ func CreateVotes(c *gin.Context) {
 	message = "投票に成功しました"
 
 	c.HTML(http.StatusOK, "base", gin.H{
-		"candidates": candidates,
+		"candidates": candidateList,
 		"message":    message,
 	})
 }

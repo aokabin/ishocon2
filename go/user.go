@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 // User Model
 type User struct {
 	ID       int
@@ -10,8 +14,14 @@ type User struct {
 }
 
 func getUser(name string, address string, myNumber string) (user User, err error) {
-	row := db.QueryRow("SELECT * FROM users WHERE name = ? AND address = ? AND mynumber = ?",
+	row := db.QueryRow("SELECT * FROM users WHERE mynumber = ?",
 		name, address, myNumber)
 	err = row.Scan(&user.ID, &user.Name, &user.Address, &user.MyNumber, &user.Votes)
+	if err != nil {
+		return
+	}
+	if user.Name != name || user.Address != address {
+		err = fmt.Errorf("Error: %s", "Can not find user")
+	}
 	return
 }
