@@ -51,8 +51,8 @@ func getCandidate(candidateID int) (c Candidate, err error) {
 }
 
 func getCandidateByName(name string) (c Candidate, err error) {
-	c = candidateByName[name]
-	if c == nil {
+	c, ok := candidateByName[name]
+	if !ok {
 		err = fmt.Errorf("Error: %s", "Can not find candidate")
 	}
 	return
