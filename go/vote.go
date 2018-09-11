@@ -22,7 +22,7 @@ func getVoteCountByCandidateID(candidateID int) (count int) {
 }
 
 func getUserVotedCount(userID int) (count int) {
-	row := db.QueryRow("SELECT COUNT(*) AS count FROM votes WHERE user_id =  ?", userID)
+	row := db.QueryRow("SELECT SUM(count) AS count FROM votes WHERE user_id =  ?", userID)
 	row.Scan(&count)
 	return
 }
