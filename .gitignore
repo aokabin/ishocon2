@@ -5,3 +5,7 @@ python/
 ruby/
 
 webapp
+
+vendor/
+
+.env

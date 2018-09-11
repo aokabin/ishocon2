@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gin-contrib/pprof"
 )
 
 var db *sql.DB
@@ -33,6 +34,7 @@ func main() {
 
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
+	pprof.Register(r) // ginのpprof?
 	r.Use(static.Serve("/css", static.LocalFile("public/css", true)))
 	layout := "templates/layout.tmpl"
 
