@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // Candidate Model
 type Candidate struct {
 	ID             int
@@ -49,8 +51,10 @@ func getCandidate(candidateID int) (c Candidate, err error) {
 }
 
 func getCandidateByName(name string) (c Candidate, err error) {
-	row := db.QueryRow("SELECT * FROM candidates WHERE name = ?", name)
-	err = row.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex, &c.Votes)
+	c = candidateByName[name]
+	if c == nil {
+		err = fmt.Errorf("Error: %s", "Can not find candidate")
+	}
 	return
 }
 
