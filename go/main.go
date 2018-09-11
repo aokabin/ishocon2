@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gin-contrib/pprof"
+	"fmt"
 )
 
 var (
@@ -189,6 +190,7 @@ func CreateVotes(c *gin.Context) {
 
 	user, userErr := getUser(c.PostForm("name"), c.PostForm("address"), c.PostForm("mynumber"))
 	if userErr != nil {
+		fmt.Println(userErr)
 		message = "個人情報に誤りがあります"
 		c.HTML(http.StatusOK, "base", gin.H{
 			"candidates": candidateList,
