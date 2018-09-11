@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"database/sql"
 	"html/template"
 	"net/http"
