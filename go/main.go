@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gin-contrib/pprof"
+	"io/ioutil"
 )
 
 var (
@@ -37,6 +38,7 @@ func main() {
 	db, _ = sql.Open("mysql", user+":"+pass+"@/"+dbname)
 	db.SetMaxIdleConns(5)
 
+	gin.DefaultWriter = ioutil.Discard
 	r = gin.Default()
 	pprof.Register(r) // ginのpprof?
 	r.Use(static.Serve("/css", static.LocalFile("public/css", true)))
