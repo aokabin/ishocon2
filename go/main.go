@@ -15,7 +15,12 @@ import (
 	"github.com/gin-contrib/pprof"
 )
 
-var db *sql.DB
+var (
+	db *sql.DB
+	//votes map[int][]Vote // Key: CandidateID
+	layout string
+	r *gin.Engine
+)
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
@@ -33,10 +38,10 @@ func main() {
 	db.SetMaxIdleConns(5)
 
 	gin.SetMode(gin.DebugMode)
-	r := gin.Default()
+	r = gin.Default()
 	pprof.Register(r) // ginのpprof?
 	r.Use(static.Serve("/css", static.LocalFile("public/css", true)))
-	layout := "templates/layout.tmpl"
+	layout = "templates/layout.tmpl"
 
 	// session store
 	store := sessions.NewCookieStore([]byte("mysession"))
@@ -93,23 +98,7 @@ func main() {
 	})
 
 	// GET /candidates/:candidateID(int)
-	r.GET("/candidates/:candidateID", func(c *gin.Context) {
-		candidateID, _ := strconv.Atoi(c.Param("candidateID"))
-		candidate, err := getCandidate(candidateID)
-		if err != nil {
-			c.Redirect(http.StatusFound, "/")
-		}
-		votes := getVoteCountByCandidateID(candidateID)
-		candidateIDs := []int{candidateID}
-		keywords := getVoiceOfSupporter(candidateIDs)
-
-		r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/candidate.tmpl")))
-		c.HTML(http.StatusOK, "base", gin.H{
-			"candidate": candidate,
-			"votes":     votes,
-			"keywords":  keywords,
-		})
-	})
+	r.GET("/candidates/:candidateID", ShowCandidate)
 
 	// GET /political_parties/:name(string)
 	r.GET("/political_parties/:name", func(c *gin.Context) {
@@ -150,42 +139,67 @@ func main() {
 	})
 
 	// POST /vote
-	r.POST("/vote", func(c *gin.Context) {
-		user, userErr := getUser(c.PostForm("name"), c.PostForm("address"), c.PostForm("mynumber"))
-		candidate, cndErr := getCandidateByName(c.PostForm("candidate"))
-		votedCount := getUserVotedCount(user.ID)
-		candidates := getAllCandidate()
-		voteCount, _ := strconv.Atoi(c.PostForm("vote_count"))
+	r.POST("/vote", CreateVotes)
 
-		var message string
-		r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/vote.tmpl")))
-		if userErr != nil {
-			message = "個人情報に誤りがあります"
-		} else if user.Votes < voteCount+votedCount {
-			message = "投票数が上限を超えています"
-		} else if c.PostForm("candidate") == "" {
-			message = "候補者を記入してください"
-		} else if cndErr != nil {
-			message = "候補者を正しく記入してください"
-		} else if c.PostForm("keyword") == "" {
-			message = "投票理由を記入してください"
-		} else {
-			for i := 1; i <= voteCount; i++ {
-				createVote(user.ID, candidate.ID, c.PostForm("keyword"))
-			}
-			message = "投票に成功しました"
-		}
-		c.HTML(http.StatusOK, "base", gin.H{
-			"candidates": candidates,
-			"message":    message,
-		})
-	})
-
-	r.GET("/initialize", func(c *gin.Context) {
-		db.Exec("DELETE FROM votes")
-
-		c.String(http.StatusOK, "Finish")
-	})
+	r.GET("/initialize", Initialize)
 
 	r.Run(":8080")
+}
+
+func Initialize(c *gin.Context) {
+	db.Exec("DELETE FROM votes")
+	db.Exec("UPDATE candidates SET votes = 0")
+
+	//votes = []Vote{}
+
+	c.String(http.StatusOK, "Finish")
+}
+
+func ShowCandidate(c *gin.Context) {
+	candidateID, _ := strconv.Atoi(c.Param("candidateID"))
+	candidate, err := getCandidate(candidateID)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/")
+	}
+	votes := getVoteCountByCandidateID(candidateID)
+	candidateIDs := []int{candidateID}
+	keywords := getVoiceOfSupporter(candidateIDs)
+
+	r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/candidate.tmpl")))
+	c.HTML(http.StatusOK, "base", gin.H{
+		"candidate": candidate,
+		"votes":     votes,
+		"keywords":  keywords,
+	})
+
+}
+
+func CreateVotes(c *gin.Context) {
+	user, userErr := getUser(c.PostForm("name"), c.PostForm("address"), c.PostForm("mynumber"))
+	candidate, cndErr := getCandidateByName(c.PostForm("candidate"))
+	votedCount := getUserVotedCount(user.ID)
+	candidates := getAllCandidate()
+	voteCount, _ := strconv.Atoi(c.PostForm("vote_count"))
+
+	var message string
+	r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/vote.tmpl")))
+
+	if userErr != nil {
+		message = "個人情報に誤りがあります"
+	} else if user.Votes < voteCount+votedCount {
+		message = "投票数が上限を超えています"
+	} else if c.PostForm("candidate") == "" {
+		message = "候補者を記入してください"
+	} else if cndErr != nil {
+		message = "候補者を正しく記入してください"
+	} else if c.PostForm("keyword") == "" {
+		message = "投票理由を記入してください"
+	} else {
+		createVote(user.ID, candidate.ID, c.PostForm("keyword"), voteCount)
+		message = "投票に成功しました"
+	}
+	c.HTML(http.StatusOK, "base", gin.H{
+		"candidates": candidates,
+		"message":    message,
+	})
 }

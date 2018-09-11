@@ -5,6 +5,7 @@ type Candidate struct {
 	ID             int
 	Name           string
 	PoliticalParty string
+	Votes int
 	Sex            string
 }
 
@@ -32,7 +33,7 @@ func getAllCandidate() (candidates []Candidate) {
 
 	for rows.Next() {
 		c := Candidate{}
-		err = rows.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex)
+		err = rows.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex, &c.Votes)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -43,13 +44,13 @@ func getAllCandidate() (candidates []Candidate) {
 
 func getCandidate(candidateID int) (c Candidate, err error) {
 	row := db.QueryRow("SELECT * FROM candidates WHERE id = ?", candidateID)
-	err = row.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex)
+	err = row.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex, &c.Votes)
 	return
 }
 
 func getCandidateByName(name string) (c Candidate, err error) {
 	row := db.QueryRow("SELECT * FROM candidates WHERE name = ?", name)
-	err = row.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex)
+	err = row.Scan(&c.ID, &c.Name, &c.PoliticalParty, &c.Sex, &c.Votes)
 	return
 }
 
