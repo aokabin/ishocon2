@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // Vote Model
 type Vote struct {
 	ID          int
@@ -26,13 +28,18 @@ func createVote(userID int, candidateID int, keyword string) {
 }
 
 func getVoiceOfSupporter(candidateIDs []int) (voices []string) {
+	args := []interface{}{}
+	for _, candidateID := range candidateIDs {
+		args = append(args, candidateID)
+	}
+
 	rows, err := db.Query(`
     SELECT keyword
     FROM votes
-    WHERE candidate_id IN (?)
+		WHERE candidate_id IN (`+strings.Join(strings.Split(strings.Repeat("?", len(candidateIDs)), ""), ",")+`)
     GROUP BY keyword
     ORDER BY COUNT(*) DESC
-    LIMIT 10`)
+    LIMIT 10`, args...)
 	if err != nil {
 		return nil
 	}
