@@ -24,6 +24,9 @@ func getEnv(key, fallback string) string {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	// database setting
 	user := getEnv("ISHOCON2_DB_USER", "ishocon")
 	pass := getEnv("ISHOCON2_DB_PASSWORD", "ishocon")
