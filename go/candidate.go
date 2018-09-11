@@ -90,16 +90,18 @@ func getCandidatesByPoliticalParty(party string) (candidates []Candidate) {
 	return
 }
 
-func getElectionResult() (result []CandidateElectionResult) {
-	rows, err := db.Query(`
-		SELECT c.id, c.name, c.political_party, c.sex, IFNULL(v.count, 0)
-		FROM candidates AS c
-		LEFT OUTER JOIN
-		(SELECT candidate_id, SUM(count) AS count
-	  	FROM votes
-	  	GROUP BY candidate_id) AS v
-		ON c.id = v.candidate_id
-		ORDER BY v.count DESC`)
+func getAllElectionResult() (result []CandidateElectionResult) {
+	query := `SELECT c.id, c.name, c.political_party, c.sex, IFNULL(v.count, 0)
+	FROM candidates AS c
+	LEFT OUTER JOIN
+	(SELECT candidate_id, SUM(count) AS count
+	FROM votes
+	GROUP BY candidate_id) AS v
+	ON c.id = v.candidate_id
+	ORDER BY v.count DESC`
+
+	rows, err := db.Query(query)
+
 	if err != nil {
 		panic(err.Error())
 	}
@@ -114,4 +116,32 @@ func getElectionResult() (result []CandidateElectionResult) {
 		result = append(result, r)
 	}
 	return
+}
+
+func getVoteCountByPartyName(partyName string) int {
+	query := `SELECT SUM(v.count)
+	FROM candidates AS c
+	LEFT OUTER JOIN
+	(SELECT candidate_id, SUM(count) AS count
+	FROM votes
+	GROUP BY candidate_id) AS v
+	ON c.id = v.candidate_id
+	WHERE political_party = ?
+	ORDER BY v.count DESC`
+
+	rows, err := db.Query(query, partyName)
+
+	if err != nil {
+		panic(err.Error())
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return count
 }

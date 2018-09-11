@@ -50,7 +50,7 @@ func main() {
 
 	// GET /
 	r.GET("/", func(c *gin.Context) {
-		electionResults := getElectionResult()
+		electionResults := getAllElectionResult()
 
 		// 上位10人と最下位のみ表示
 		tmp := make([]CandidateElectionResult, len(electionResults))
@@ -101,31 +101,7 @@ func main() {
 	r.GET("/candidates/:candidateID", ShowCandidate)
 
 	// GET /political_parties/:name(string)
-	r.GET("/political_parties/:name", func(c *gin.Context) {
-		partyName := c.Param("name")
-		var votes int
-		electionResults := getElectionResult()
-		for _, r := range electionResults {
-			if r.PoliticalParty == partyName {
-				votes += r.VoteCount
-			}
-		}
-
-		candidates := getCandidatesByPoliticalParty(partyName)
-		candidateIDs := []int{}
-		for _, c := range candidates {
-			candidateIDs = append(candidateIDs, c.ID)
-		}
-		keywords := getVoiceOfSupporter(candidateIDs)
-
-		r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/political_party.tmpl")))
-		c.HTML(http.StatusOK, "base", gin.H{
-			"politicalParty": partyName,
-			"votes":          votes,
-			"candidates":     candidates,
-			"keywords":       keywords,
-		})
-	})
+	r.GET("/political_parties/:name", ShowPoliticalParty)
 
 	// GET /vote
 	r.GET("/vote", func(c *gin.Context) {
@@ -153,6 +129,27 @@ func Initialize(c *gin.Context) {
 	//votes = []Vote{}
 
 	c.String(http.StatusOK, "Finish")
+}
+
+func ShowPoliticalParty(c *gin.Context) {
+	partyName := c.Param("name")
+	votes := getVoteCountByPartyName(partyName)
+
+	candidates := getCandidatesByPoliticalParty(partyName)
+	candidateIDs := []int{}
+	for _, c := range candidates {
+		candidateIDs = append(candidateIDs, c.ID)
+	}
+	keywords := getVoiceOfSupporter(candidateIDs)
+
+	r.SetHTMLTemplate(template.Must(template.ParseFiles(layout, "templates/political_party.tmpl")))
+	c.HTML(http.StatusOK, "base", gin.H{
+		"politicalParty": partyName,
+		"votes":          votes,
+		"candidates":     candidates,
+		"keywords":       keywords,
+	})
+
 }
 
 func ShowCandidate(c *gin.Context) {
